@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* Glow pulse animation for completed flag days */
+@keyframes glow-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px 2px var(--glow-color, rgba(59, 130, 246, 0.4));
+    }
+
+    50% {
+        box-shadow: 0 0 16px 6px var(--glow-color, rgba(59, 130, 246, 0.6));
+    }
+}
+
+.day-completed-glow {
+    animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Physical press feedback for increment button */
+@keyframes btn-press {
+    0% {
+        transform: scale(1);
+    }
+
+    40% {
+        transform: scale(0.82);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.btn-press-active {
+    animation: btn-press 0.2s ease-out;
+}
+
+/* 360° flip animation for completed check icon */
+@keyframes flip-in {
+    0% {
+        transform: rotateY(0deg);
+    }
+
+    100% {
+        transform: rotateY(360deg);
+    }
+}
+
+.icon-flip-done {
+    animation: flip-in 0.3s ease-out;
+}
