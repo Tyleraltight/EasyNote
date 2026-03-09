@@ -11,7 +11,13 @@ export function useAuth() {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
             setLoading(false);
+        }).catch((err) => {
+            console.warn('Failed to get session:', err);
+            setLoading(false);
         });
+
+        // Fallback: if getSession hangs for more than 3s, stop loading
+        const timeout = setTimeout(() => setLoading(false), 3000);
 
         // Listen to auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -21,7 +27,10 @@ export function useAuth() {
             }
         );
 
-        return () => subscription.unsubscribe();
+        return () => {
+            subscription.unsubscribe();
+            clearTimeout(timeout);
+        };
     }, []);
 
     const signInWithGitHub = useCallback(async () => {
