@@ -2,19 +2,36 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2 } from 'lucide-react';
 import type { Flag, MemoItem } from './types';
 import { COLORS, getColorTheme, todayKey, yesterdayKey, getWeekId, getMonthId } from './types';
-import { loadFlagsAsync, loadMemoAsync, saveFlags, saveMemo, silentBackup } from './storage';
+import { useDataSync } from './hooks/useDataSync';
+import UserMenu from './components/UserMenu';
+import type { User } from '@supabase/supabase-js';
 
-export default function Dashboard() {
-    const [flags, setFlags] = useState<Flag[]>([]);
+interface DashboardProps {
+    user: User;
+    onSignOut: () => void;
+}
+
+export default function Dashboard({ user, onSignOut }: DashboardProps) {
+    // Cloud-synced data via useDataSync
+    const { flags, memo, setFlags, setMemo, loaded } = useDataSync(user.id);
+
+    // Derived memo state for the UI
+    const memoMode = memo.mode;
+    const noteContent = memo.text;
+    const todos = memo.todos;
+    const setMemoMode = (mode: 'note' | 'todo') => setMemo(prev => ({ ...prev, mode }));
+    const setNoteContent = (text: string) => setMemo(prev => ({ ...prev, text }));
+    const setTodos = (updater: MemoItem[] | ((prev: MemoItem[]) => MemoItem[])) => {
+        setMemo(prev => ({
+            ...prev,
+            todos: typeof updater === 'function' ? updater(prev.todos) : updater,
+        }));
+    };
+
     const [isFlagModalOpen, setIsFlagModalOpen] = useState(false);
     const [newFlag, setNewFlag] = useState({ name: '', total: 10, unit: '次', color: COLORS[0].value, cycle: 'none' as 'none' | 'weekly' | 'monthly' });
-
-    const [memoMode, setMemoMode] = useState<'note' | 'todo'>('note');
-    const [noteContent, setNoteContent] = useState('');
-    const [todos, setTodos] = useState<MemoItem[]>([]);
     const [newTodo, setNewTodo] = useState('');
     const [pressedId, setPressedId] = useState<string | null>(null);
-    const [loaded, setLoaded] = useState(false); // Prevents empty-state overwrites
     const [toast, setToast] = useState<string | null>(null);
 
     // Drag & drop state
@@ -33,57 +50,31 @@ export default function Dashboard() {
         return { year: now.getFullYear(), month: now.getMonth() };
     });
 
-    // Safe Hydration: async load with localStorage → IndexedDB fallback
+    // Per-flag cycle reset (runs once after data is loaded)
     useEffect(() => {
-        (async () => {
-            let [flagsData, memoData] = await Promise.all([
-                loadFlagsAsync(),
-                loadMemoAsync(),
-            ]);
+        if (!loaded || flags.length === 0) return;
 
-            // Per-flag cycle reset
-            const WEEK_KEY = 'easynote-last-week';
-            const MONTH_KEY = 'easynote-last-month';
-            const currentWeek = getWeekId();
-            const currentMonth = getMonthId();
-            const lastWeek = localStorage.getItem(WEEK_KEY);
-            const lastMonth = localStorage.getItem(MONTH_KEY);
-            const weekChanged = lastWeek && lastWeek !== currentWeek;
-            const monthChanged = lastMonth && lastMonth !== currentMonth;
+        const WEEK_KEY = 'easynote-last-week';
+        const MONTH_KEY = 'easynote-last-month';
+        const currentWeek = getWeekId();
+        const currentMonth = getMonthId();
+        const lastWeek = localStorage.getItem(WEEK_KEY);
+        const lastMonth = localStorage.getItem(MONTH_KEY);
+        const weekChanged = lastWeek && lastWeek !== currentWeek;
+        const monthChanged = lastMonth && lastMonth !== currentMonth;
 
-            if ((weekChanged || monthChanged) && flagsData.length > 0) {
-                flagsData = flagsData.map(f => {
-                    // Backward compat: treat missing cycle as 'none'
-                    const cycle = f.cycle || 'none';
-                    if (cycle === 'weekly' && weekChanged) return { ...f, current: 0 };
-                    if (cycle === 'monthly' && monthChanged) return { ...f, current: 0 };
-                    return f;
-                });
-            }
-            localStorage.setItem(WEEK_KEY, currentWeek);
-            localStorage.setItem(MONTH_KEY, currentMonth);
-
-            setFlags(flagsData);
-            setMemoMode(memoData.mode);
-            setNoteContent(memoData.text);
-            setTodos(memoData.todos);
-            setLoaded(true);
-        })();
-    }, []);
-
-    // Persist flags (only after initial load, prevents empty overwrite)
-    useEffect(() => {
-        if (!loaded) return;
-        const err = saveFlags(flags);
-        if (err) showToast(err.message);
-    }, [flags, loaded, showToast]);
-
-    // Persist memo (only after initial load)
-    useEffect(() => {
-        if (!loaded) return;
-        const err = saveMemo({ mode: memoMode, text: noteContent, todos });
-        if (err) showToast(err.message);
-    }, [memoMode, noteContent, todos, loaded, showToast]);
+        if (weekChanged || monthChanged) {
+            setFlags(prev => prev.map(f => {
+                const cycle = f.cycle || 'none';
+                if (cycle === 'weekly' && weekChanged) return { ...f, current: 0 };
+                if (cycle === 'monthly' && monthChanged) return { ...f, current: 0 };
+                return f;
+            }));
+        }
+        localStorage.setItem(WEEK_KEY, currentWeek);
+        localStorage.setItem(MONTH_KEY, currentMonth);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loaded]);
 
     // Flag actions
     const handleIncrement = (id: string) => {
@@ -92,12 +83,7 @@ export default function Dashboard() {
         setTimeout(() => setPressedId(null), 200);
         setFlags(prev => prev.map(f => {
             if (f.id === id && f.current < f.total) {
-                const updated = { ...f, current: f.current + 1, history: [...f.history, todayKey()] };
-                // Auto-backup when flag reaches 100%
-                if (updated.current >= updated.total) {
-                    setTimeout(() => silentBackup(), 500);
-                }
-                return updated;
+                return { ...f, current: f.current + 1, history: [...f.history, todayKey()] };
             }
             return f;
         }));
@@ -252,23 +238,26 @@ export default function Dashboard() {
     const dateStr = today.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
 
     return (
-        <div className="min-h-screen font-[Inter,system-ui,sans-serif] text-slate-900 pb-20">
+        <div className="min-h-screen font-[Inter,system-ui,sans-serif] text-slate-900 pb-24 sm:pb-20">
             {/* Background */}
             <div className="fixed inset-0 -z-10 h-full w-full bg-[#f8fafc]">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#0000001a_1px,transparent_1px),linear-gradient(to_bottom,#0000001a_1px,transparent_1px)] bg-[size:24px_24px]" />
                 <div className="absolute inset-0 bg-[radial-gradient(125%_125%_at_50%_10%,rgba(249,115,22,0.2)_40%,rgba(248,250,252,1)_100%)]" />
             </div>
 
-            <main className="max-w-[1200px] mx-auto px-8 pt-12">
-                <header className="mb-12">
-                    <h1 className="text-4xl font-black tracking-tight text-slate-800">EasyNote</h1>
-                    <p className="text-slate-500 font-medium mt-2">{dateStr}</p>
+            <main className="max-w-[1200px] mx-auto px-4 pt-6 sm:px-8 sm:pt-12">
+                <header className="mb-6 sm:mb-12 flex items-start justify-between">
+                    <div>
+                        <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-800">EasyNote</h1>
+                        <p className="text-slate-500 font-medium mt-1 sm:mt-2 text-sm sm:text-base">{dateStr}</p>
+                    </div>
+                    <UserMenu user={user} onSignOut={onSignOut} />
                 </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-10 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 sm:gap-10 items-start">
                     {/* Left: Memo Sidebar */}
-                    <aside className="sticky top-12 space-y-6">
-                        <div className="bg-white/70 backdrop-blur-xl border border-white shadow-xl rounded-3xl p-6 min-h-[500px] flex flex-col">
+                    <aside className="lg:sticky lg:top-12 space-y-6">
+                        <div className="bg-white/70 backdrop-blur-xl border border-white shadow-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 min-h-[280px] sm:min-h-[500px] flex flex-col">
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex bg-slate-100 p-1 rounded-xl">
                                     <button onClick={() => setMemoMode('note')}
@@ -309,7 +298,7 @@ export default function Dashboard() {
                                     <input type="text" value={newTodo} onChange={e => setNewTodo(e.target.value)} onKeyDown={addTodo}
                                         placeholder="添加任务，回车确认"
                                         className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 mb-4 text-sm focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all" />
-                                    <div className="space-y-2 overflow-y-auto max-h-[400px]">
+                                    <div className="space-y-2 overflow-y-auto max-h-[250px] sm:max-h-[400px]">
                                         {todos.map(todo => (
                                             <div key={todo.id} className="group flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg transition-all">
                                                 <button onClick={() => setTodos(todos.map(t => t.id === todo.id ? { ...t, completed: !t.completed } : t))}
@@ -318,7 +307,7 @@ export default function Dashboard() {
                                                 </button>
                                                 <span className={`text-sm flex-1 ${todo.completed ? 'text-slate-300 line-through' : 'text-slate-600'}`}>{todo.text}</span>
                                                 <button onClick={() => setTodos(todos.filter(t => t.id !== todo.id))}
-                                                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 transition-all">
+                                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 active:text-rose-500 transition-all">
                                                     <Trash2 size={14} />
                                                 </button>
                                             </div>
@@ -341,7 +330,7 @@ export default function Dashboard() {
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             {flags.map(flag => {
                                 const isDone = flag.current >= flag.total;
                                 return (
@@ -351,15 +340,15 @@ export default function Dashboard() {
                                         onDragOver={(e) => handleDragOver(e, flag.id)}
                                         onDrop={() => handleDrop(flag.id)}
                                         onDragEnd={handleDragEnd}
-                                        className={`group relative p-6 rounded-[2rem] border transition-all duration-300 cursor-grab active:cursor-grabbing
+                                        className={`group relative p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border transition-all duration-300 cursor-grab active:cursor-grabbing
                                             ${dragId === flag.id ? 'opacity-50' : ''}
                                             ${dragOverId === flag.id ? 'ring-2 ring-slate-300' : ''}
                                             ${isDone ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'}`}>
                                         <button onClick={() => handleDeleteFlag(flag.id)}
-                                            className="absolute top-4 right-4 opacity-0 group-hover:opacity-50 hover:!opacity-100 text-slate-400 hover:text-rose-500 transition-all">
+                                            className="absolute top-3 right-3 sm:top-4 sm:right-4 opacity-50 sm:opacity-0 sm:group-hover:opacity-50 hover:!opacity-100 active:!opacity-100 text-slate-400 hover:text-rose-500 active:text-rose-500 transition-all">
                                             <X size={16} />
                                         </button>
-                                        <div className="flex justify-between items-start mb-6">
+                                        <div className="flex justify-between items-start mb-4 sm:mb-6">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-1 h-8 rounded-full ${isDone ? 'bg-amber-500' : 'bg-slate-200 group-hover:bg-slate-400'} transition-all`} />
                                                 <div>
@@ -419,7 +408,7 @@ export default function Dashboard() {
                                         </button>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                                <div className="bg-white rounded-2xl border border-slate-100 p-3 sm:p-6 shadow-sm">
                                     {/* Weekday headers */}
                                     <div className="grid grid-cols-7 gap-1 mb-2">
                                         {['日', '一', '二', '三', '四', '五', '六'].map(d => (
@@ -497,8 +486,8 @@ export default function Dashboard() {
 
             {/* Add Flag Modal */}
             {isFlagModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setIsFlagModalOpen(false)}>
-                    <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setIsFlagModalOpen(false)}>
+                    <div className="bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 w-full sm:max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
                         <h2 className="text-xl font-bold mb-6">新增 Flag</h2>
                         <div className="space-y-4">
                             <div>
@@ -525,8 +514,8 @@ export default function Dashboard() {
                                         <button key={val}
                                             onClick={() => setNewFlag({ ...newFlag, cycle: val })}
                                             className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${newFlag.cycle === val
-                                                    ? 'bg-slate-900 text-white'
-                                                    : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                                                ? 'bg-slate-900 text-white'
+                                                : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
                                                 }`}>
                                             {label}
                                         </button>
@@ -547,7 +536,7 @@ export default function Dashboard() {
 
             {/* Toast notification */}
             {toast && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-rose-600 text-white text-sm font-bold rounded-2xl shadow-2xl animate-[fadeIn_0.2s_ease-out]">
+                <div className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-rose-600 text-white text-sm font-bold rounded-2xl shadow-2xl animate-[fadeIn_0.2s_ease-out]">
                     {toast}
                 </div>
             )}

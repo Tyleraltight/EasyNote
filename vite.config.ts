@@ -19,7 +19,10 @@ export default defineConfig({
         theme_color: '#f8fafc',
         background_color: '#f8fafc',
         display: 'standalone',
+        orientation: 'portrait',
+        id: '/',
         start_url: '/',
+        categories: ['productivity', 'utilities'],
         icons: [
           {
             src: '/icon-192.png',
