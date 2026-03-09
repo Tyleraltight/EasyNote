@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Flag, MemoData } from '../types';
+import { getWeekId, getMonthId } from '../types';
 
 const FLAGS_KEY = 'annual-flags';
 const MEMO_KEY = 'todo-flag-memo';
@@ -76,13 +77,37 @@ export function useDataSync(userId: string | null) {
     // Skip syncing during initial load
     const initialLoadDone = useRef(false);
 
+    // ── Cycle reset helper: resets flags whose cycle period has changed ──
+    function applyCycleReset(flagsData: Flag[], lastWeek: string, lastMonth: string): { flags: Flag[]; weekChanged: boolean; monthChanged: boolean } {
+        const currentWeek = getWeekId();
+        const currentMonth = getMonthId();
+        const weekChanged = !!lastWeek && lastWeek !== currentWeek;
+        const monthChanged = !!lastMonth && lastMonth !== currentMonth;
+
+        if (!weekChanged && !monthChanged) return { flags: flagsData, weekChanged: false, monthChanged: false };
+
+        const resetFlags = flagsData.map(f => {
+            const cycle = f.cycle || 'none';
+            if (cycle === 'weekly' && weekChanged) return { ...f, current: 0 };
+            if (cycle === 'monthly' && monthChanged) return { ...f, current: 0 };
+            return f;
+        });
+        return { flags: resetFlags, weekChanged, monthChanged };
+    }
+
     // ── Initial data load ──
     useEffect(() => {
         initialLoadDone.current = false;
 
         if (!userId) {
             // Not logged in: use localStorage only
-            setFlags(readLocalFlags());
+            const localFlags = readLocalFlags();
+            const lastWeek = localStorage.getItem('easynote-last-week') || '';
+            const lastMonth = localStorage.getItem('easynote-last-month') || '';
+            const { flags: resetFlags } = applyCycleReset(localFlags, lastWeek, lastMonth);
+            localStorage.setItem('easynote-last-week', getWeekId());
+            localStorage.setItem('easynote-last-month', getMonthId());
+            setFlags(resetFlags);
             setMemo(readLocalMemo());
             setLoaded(true);
             initialLoadDone.current = true;
@@ -106,6 +131,8 @@ export function useDataSync(userId: string | null) {
                 const localFlagsExist = localFlags.length > 0;
                 const localMemoExists = localMemo.text || localMemo.todos.length > 0;
 
+                let loadedFlags: Flag[] = [];
+
                 // Migration: push local data to Supabase if remote is empty but local has data
                 if (!remoteFlagsExist && localFlagsExist) {
                     const rows = localFlags.map((f, i) => ({
@@ -122,14 +149,47 @@ export function useDataSync(userId: string | null) {
                         sort_order: i,
                     }));
                     await supabase.from('flags').upsert(rows);
-                    setFlags(localFlags);
+                    loadedFlags = localFlags;
                 } else if (remoteFlagsExist) {
-                    const parsed = (flagRows as FlagRow[]).map(rowToFlag);
-                    setFlags(parsed);
-                    writeLocalFlags(parsed);
-                } else {
-                    setFlags([]);
+                    loadedFlags = (flagRows as FlagRow[]).map(rowToFlag);
+                    writeLocalFlags(loadedFlags);
                 }
+
+                // Cycle reset using Supabase-stored last_week/last_month
+                const lastWeek = memoRow?.last_week || '';
+                const lastMonth = memoRow?.last_month || '';
+                const { flags: resetFlags, weekChanged, monthChanged } = applyCycleReset(loadedFlags, lastWeek, lastMonth);
+
+                if (weekChanged || monthChanged) {
+                    // Write reset flags back to Supabase
+                    const resetRows = resetFlags.map((f, i) => ({
+                        id: f.id, user_id: userId, name: f.name, current: f.current,
+                        total: f.total, unit: f.unit, color: f.color, cycle: f.cycle || 'none',
+                        history: f.history, reminder: f.reminder, sort_order: i,
+                        updated_at: new Date().toISOString(),
+                    }));
+                    if (resetRows.length > 0) {
+                        supabase.from('flags').upsert(resetRows).then(({ error }) => {
+                            if (error) console.warn('Cycle reset sync error:', error);
+                        });
+                    }
+                }
+
+                // Always update last_week/last_month to current values
+                const currentWeek = getWeekId();
+                const currentMonth = getMonthId();
+                if (lastWeek !== currentWeek || lastMonth !== currentMonth) {
+                    supabase.from('memos').upsert({
+                        user_id: userId,
+                        last_week: currentWeek,
+                        last_month: currentMonth,
+                        ...(remoteMemoExists ? {} : { mode: 'note', text: '', todos: [] }),
+                    }).then(({ error }) => {
+                        if (error) console.warn('Cycle ID sync error:', error);
+                    });
+                }
+
+                setFlags(resetFlags);
 
                 if (!remoteMemoExists && localMemoExists) {
                     await supabase.from('memos').upsert({
@@ -137,6 +197,8 @@ export function useDataSync(userId: string | null) {
                         mode: localMemo.mode,
                         text: localMemo.text,
                         todos: localMemo.todos,
+                        last_week: currentWeek,
+                        last_month: currentMonth,
                     });
                     setMemo(localMemo);
                 } else if (remoteMemoExists) {

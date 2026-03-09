@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2 } from 'lucide-react';
 import type { Flag, MemoItem } from './types';
-import { COLORS, getColorTheme, todayKey, yesterdayKey, getWeekId, getMonthId } from './types';
+import { COLORS, getColorTheme, todayKey, yesterdayKey } from './types';
 import { useDataSync } from './hooks/useDataSync';
 import UserMenu from './components/UserMenu';
 import type { User } from '@supabase/supabase-js';
@@ -13,7 +13,7 @@ interface DashboardProps {
 
 export default function Dashboard({ user, onSignOut }: DashboardProps) {
     // Cloud-synced data via useDataSync
-    const { flags, memo, setFlags, setMemo, loaded } = useDataSync(user.id);
+    const { flags, memo, setFlags, setMemo } = useDataSync(user.id);
 
     // Derived memo state for the UI
     const memoMode = memo.mode;
@@ -50,31 +50,7 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
         return { year: now.getFullYear(), month: now.getMonth() };
     });
 
-    // Per-flag cycle reset (runs once after data is loaded)
-    useEffect(() => {
-        if (!loaded || flags.length === 0) return;
 
-        const WEEK_KEY = 'easynote-last-week';
-        const MONTH_KEY = 'easynote-last-month';
-        const currentWeek = getWeekId();
-        const currentMonth = getMonthId();
-        const lastWeek = localStorage.getItem(WEEK_KEY);
-        const lastMonth = localStorage.getItem(MONTH_KEY);
-        const weekChanged = lastWeek && lastWeek !== currentWeek;
-        const monthChanged = lastMonth && lastMonth !== currentMonth;
-
-        if (weekChanged || monthChanged) {
-            setFlags(prev => prev.map(f => {
-                const cycle = f.cycle || 'none';
-                if (cycle === 'weekly' && weekChanged) return { ...f, current: 0 };
-                if (cycle === 'monthly' && monthChanged) return { ...f, current: 0 };
-                return f;
-            }));
-        }
-        localStorage.setItem(WEEK_KEY, currentWeek);
-        localStorage.setItem(MONTH_KEY, currentMonth);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loaded]);
 
     // Flag actions
     const handleIncrement = (id: string) => {
