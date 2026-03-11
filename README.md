@@ -2,9 +2,30 @@
 
 **EasyNote** 是一款极简主义风格的个人效率管理应用，结合了**年度目标（Flag）追踪**、**随手记/待办事项**以及**日历进度回顾**功能。支持 GitHub 登录 + Supabase 云端同步，在手机和电脑上随时查看同一份数据。
 
+🌐 **在线体验**：[https://easy-note-delta.vercel.app/#](https://easy-note-delta.vercel.app/#)
+> 目前支持 GitHub 登录，其他登录方式将尽快添加。
+
 <div align="center">
-  <img src="src/assets/localhost_5173_%20(1).png" alt="EasyNote Dashboard Screenshot" width="800"/>
+  <img src="src/assets/mockup1.png" alt="EasyNote Dashboard Screenshot" width="800"/>
 </div>
+
+---
+
+## 🌐 网络连接指南（必读）
+
+由于目前尚未配置国内 DNS 优化及专属域名，初次使用时请参考以下步骤：
+
+### 首次使用（环境准备）
+> **要求**：第一次访问并登录账号时，需开启 VPN 以确保顺利通过身份验证并获取配置。
+
+### 后续使用（日常访问）
+> **优化**：一旦完成首次部署与登录，后续使用无需再挂 VPN。
+>
+> **同步条件**：在常规网络环境下，保持设备联网即可实现随时随地的数据同步与更新。
+
+### 当前状态
+- **访问地址**：临时采用 IP/二级域名访问（正式域名选购中）。
+- **部署方式**：支持 Web 访问及本地环境运行。
 
 ---
 
@@ -77,3 +98,13 @@
 - **KISS 原则**：极简且高度内聚的代码，不引入不必要的状态管理或沉重的第三方库。
 - **云端优先，离线兜底**：数据默认存在云端实现跨设备同步，断网时 localStorage 无缝接管，用户完全无感知。
 - **移动端不是附属品**：界面从一开始就考虑手机使用场景，不是桌面端的缩水版，而是同样好用的完整体验。
+
+## 📄 License
+
+This project is licensed under the [MIT License](./LICENSE).
+
+---
+
+<div align="center">
+  <p>If this project helps you, please give it a ⭐. It means a lot to me!</p>
+</div>
