@@ -22,6 +22,7 @@ export interface MemoItem {
     id: string;
     text: string;
     completed: boolean;
+    pinned?: boolean;
 }
 
 export interface MemoData {

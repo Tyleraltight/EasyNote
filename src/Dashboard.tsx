@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
-import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2 } from 'lucide-react';
+import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2, Pin } from 'lucide-react';
 import type { Flag, MemoItem } from './types';
 import { COLORS, getColorTheme, todayKey, yesterdayKey } from './types';
 import { useDataSync } from './hooks/useDataSync';
 import UserMenu from './components/UserMenu';
+import CongratsOverlay from './components/CongratsOverlay';
 import type { User } from '@supabase/supabase-js';
 
 interface DashboardProps {
@@ -33,6 +34,7 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
     const [newTodo, setNewTodo] = useState('');
     const [pressedId, setPressedId] = useState<string | null>(null);
     const [toast, setToast] = useState<string | null>(null);
+    const [congratsFlag, setCongratsFlag] = useState<string | null>(null);
 
     // Drag & drop state
     const [dragId, setDragId] = useState<string | null>(null);
@@ -59,11 +61,18 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
         setTimeout(() => setPressedId(null), 200);
         setFlags(prev => prev.map(f => {
             if (f.id === id && f.current < f.total) {
-                return { ...f, current: f.current + 1, history: [...f.history, todayKey()] };
+                const next = f.current + 1;
+                // Show congrats when goal is just reached
+                if (next === f.total) {
+                    setCongratsFlag(f.name);
+                }
+                return { ...f, current: next, history: [...f.history, todayKey()] };
             }
             return f;
         }));
     };
+
+    const dismissCongrats = useCallback(() => setCongratsFlag(null), []);
 
     // Make-up sign-in for yesterday only
     const handleMakeupSign = (id: string) => {
@@ -108,10 +117,10 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
         setFlags(flags.filter(f => f.id !== id));
     };
 
-    // Reset a completed flag back to zero
+    // Reset a completed flag back to zero (preserve history for calendar review)
     const handleResetFlag = (id: string) => {
         setFlags(prev => prev.map(f =>
-            f.id === id ? { ...f, current: 0, history: [] } : f
+            f.id === id ? { ...f, current: 0 } : f
         ));
     };
 
@@ -275,13 +284,17 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                         placeholder="添加任务，回车确认"
                                         className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 mb-4 text-sm focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all" />
                                     <div className="space-y-2 overflow-y-auto max-h-[250px] sm:max-h-[400px]">
-                                        {todos.map(todo => (
-                                            <div key={todo.id} className="group flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg transition-all">
+                                        {[...todos].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).map(todo => (
+                                            <div key={todo.id} className={`group flex items-center gap-3 p-2 rounded-lg transition-all ${todo.pinned ? 'bg-amber-50/60' : 'hover:bg-slate-50'}`}>
                                                 <button onClick={() => setTodos(todos.map(t => t.id === todo.id ? { ...t, completed: !t.completed } : t))}
                                                     className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${todo.completed ? 'bg-blue-500 border-blue-500' : 'border-slate-300 hover:border-blue-400'}`}>
                                                     {todo.completed && <Check size={12} className="text-white" />}
                                                 </button>
                                                 <span className={`text-sm flex-1 ${todo.completed ? 'text-slate-300 line-through' : 'text-slate-600'}`}>{todo.text}</span>
+                                                <button onClick={() => setTodos(todos.map(t => t.id === todo.id ? { ...t, pinned: !t.pinned } : t))}
+                                                    className={`p-1 transition-all ${todo.pinned ? 'opacity-100 text-amber-500' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-slate-300 hover:text-amber-500 active:text-amber-500'}`}>
+                                                    <Pin size={14} className={todo.pinned ? 'fill-amber-500' : ''} />
+                                                </button>
                                                 <button onClick={() => setTodos(todos.filter(t => t.id !== todo.id))}
                                                     className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 active:text-rose-500 transition-all">
                                                     <Trash2 size={14} />
@@ -508,6 +521,11 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Congrats overlay */}
+            {congratsFlag && (
+                <CongratsOverlay flagName={congratsFlag} onDone={dismissCongrats} />
             )}
 
             {/* Toast notification */}

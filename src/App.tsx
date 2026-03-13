@@ -1,6 +1,7 @@
 import { useAuth } from './hooks/useAuth';
 import Dashboard from './Dashboard';
 import LoginPage from './components/LoginPage';
+import UpdateLogCard from './components/UpdateLogCard';
 
 export default function App() {
   const { user, loading, signInWithGitHub, signOut } = useAuth();
@@ -18,5 +19,10 @@ export default function App() {
     return <LoginPage onLogin={signInWithGitHub} loading={false} />;
   }
 
-  return <Dashboard user={user} onSignOut={signOut} />;
+  return (
+    <>
+      <Dashboard user={user} onSignOut={signOut} />
+      <UpdateLogCard />
+    </>
+  );
 }
