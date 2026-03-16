@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Current version — bump this to show the card again on next deploy
-const LOG_VERSION = '1.2.4';
+const LOG_VERSION = '1.2.5';
 const STORAGE_KEY = `easynote-update-seen-${LOG_VERSION}`;
 
 // --- Utility ---
@@ -33,9 +33,9 @@ const CARDS: CardItem[] = [
         designation: 'Tyler',
         content: (
             <div className="space-y-3">
-                <p>1. 修复了完成 <Highlight>flag</Highlight> 后日志里的打卡记录会消失的 bug</p>
-                <p>2. 增加了待办页的 <Highlight>置顶功能</Highlight></p>
-                <p>3. 使用愉快，欢迎更多反馈!</p>
+                <p>1. 新增 <Highlight>Google</Highlight> 账号一键无感登录支持</p>
+                <p>2. 优化 PWA <Highlight>静默更新</Highlight> 体验，告别手动重载</p>
+                <p>3. 基础体验与稳定性提升</p>
             </div>
         ),
     },

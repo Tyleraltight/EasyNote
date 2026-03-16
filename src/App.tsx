@@ -4,7 +4,7 @@ import LoginPage from './components/LoginPage';
 import UpdateLogCard from './components/UpdateLogCard';
 
 export default function App() {
-  const { user, loading, signInWithGitHub, signOut } = useAuth();
+  const { user, loading, signInWithGitHub, signInWithGoogle, signOut } = useAuth();
 
   // Show nothing while checking auth state
   if (loading) {
@@ -16,7 +16,7 @@ export default function App() {
   }
 
   if (!user) {
-    return <LoginPage onLogin={signInWithGitHub} loading={false} />;
+    return <LoginPage onLoginGithub={signInWithGitHub} onLoginGoogle={signInWithGoogle} loading={false} />;
   }
 
   return (

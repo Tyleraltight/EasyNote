@@ -40,12 +40,26 @@ export function useAuth() {
                 redirectTo: window.location.origin,
             },
         });
-        if (error) console.error('Login error:', error.message);
+        if (error) console.error('GitHub Login error:', error.message);
+    }, []);
+
+    const signInWithGoogle = useCallback(async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                },
+            },
+        });
+        if (error) console.error('Google Login error:', error.message);
     }, []);
 
     const signOut = useCallback(async () => {
         await supabase.auth.signOut();
     }, []);
 
-    return { user, loading, signInWithGitHub, signOut };
+    return { user, loading, signInWithGitHub, signInWithGoogle, signOut };
 }
