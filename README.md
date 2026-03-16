@@ -1,9 +1,9 @@
 # EasyNote 📝
 
-**EasyNote** 是一款极简主义风格的个人效率管理应用，结合了**年度目标（Flag）追踪**、**随手记/待办事项**以及**日历进度回顾**功能。支持 GitHub 登录 + Supabase 云端同步，在手机和电脑上随时查看同一份数据。
+**EasyNote** 是一款极简主义风格的个人效率管理应用，结合了**年度目标（Flag）追踪**、**随手记/待办事项**以及**日历进度回顾**功能。支持 GitHub / Google 快捷登录与 Supabase 云端同步，在手机和电脑上随时查看同一份数据。
 
 🌐 **在线体验**：[https://easy-note-delta.vercel.app/#](https://easy-note-delta.vercel.app/#)
-> 目前支持 GitHub 登录，其他登录方式将尽快添加。
+> 目前支持 GitHub 及 Google 双通道无密登录。
 
 <div align="center">
   <img src="src/assets/mockup1.png" alt="EasyNote Dashboard Screenshot" width="800"/>
@@ -34,41 +34,40 @@
 - 🎯 **Flag 目标追踪系统**
   - **进度跟踪**：设定目标次数（如：每周跑步 3次），每次完成点击打卡，实时查看进度条。
   - **智能转化**：在"想法"模式下输入带数字的文本（如："本月完成阅读 5 本书"），可一键通过行级闪电图标⚡快捷创建新 Flag。
-  - **拖拽排序**：原生支持 HTML5 拖放，轻松调整 Flag 优先级。
+  - **拖拽排序**：原生支持 HTML5 拖放（Drag & Drop），轻松调整 Flag 优先级。
   - **周期轮回**：支持"每周轮回"和"每月轮回"模式，到期自动归零重新开始。
-  - **交互反馈**：打卡按钮具备真实的"物理按压"缩放反馈；Flag 达到 100% 完成态时，背景平滑过渡至琥珀色，支持一键重置。
+  - **交互反馈**：打卡按钮具备真实的"物理按压"缩放反馈；Flag 达到 100% 完成态时，背景平滑过渡至琥珀色（Amber），支持一键重置。
 
 - 📅 **年度进度回顾（Monthly Block Calendar）**
   - **可视化日历**：按月切换显示的日历，自动高亮"今天"。
   - **状态映射**：有打卡记录的日期自动呈现对应 Flag 专属配色的指示点。
   - **完成日发光特效**：当某项 Flag 在一天内完成时，该日期格子会触发脉冲流光动画。
- 
- - 📱 **PWA 移动端适配**
-   - **添加到主屏幕**：在手机浏览器（如Safari/Chrome/Edge）中可以"添加到桌面"，像原生 APP 一样全屏运行。
-   - **响应式布局**：界面针对手机和平板做了全面适配，侧边栏自动收为单栏。
-   - **触摸优化**：按钮大小、间距、弹窗位置都针对手指操作做了调整。
-   - **安全区域**：适配刘海屏、底部手势条等手机特殊区域。
 
 - 📝 **极简边栏：想法与待办**
   - **双模式自由切换**：在无拘无束的"想法"文本框与结构化的"待办任务"列表间无缝切换。
   - **悬浮操作**：待办事项支持悬浮删除交互（移动端始终可见）。
 
-- 🔐 **GitHub 登录 + 云端同步**
-  - **一键登录**：通过 GitHub OAuth 授权，无需注册账号。
-  - **跨设备同步**：手机和电脑登录同一个 GitHub 账号，数据自动同步，打卡不怕换设备。
+- 🔐 **GitHub / Google 快捷登录 + 云端无缝同步**
+  - **一键认证**：内置 GitHub 与 Google OAuth 授权，抛开心智负担，彻底告别密码注册烦恼。
+  - **跨设备同步**：手机和电脑登录同一个账号，数据实时双向同步，打卡不怕换设备。
   - **实时 Upsert**：每次操作（打卡、新增、编辑）都会实时写入 Supabase 云端数据库。
   - **离线可用**：断网时自动回退到 localStorage 本地缓存，联网后无缝恢复。
 
+- 📱 **PWA 移动端适配**
+  - **添加到主屏幕**：在手机浏览器中可以"添加到桌面"，像原生 APP 一样全屏运行。
+  - **响应式布局**：界面针对手机和平板做了全面适配，侧边栏自动收为单栏。
+  - **触摸优化**：按钮大小、间距、弹窗位置都针对手指操作做了调整。
+  - **安全区域**：适配刘海屏、底部手势条等手机特殊区域。
 
 ## 🛠️ 技术栈
 
 - **框架**: React 19 + TypeScript + Vite 7
 - **样式**: Tailwind CSS v4（自定义动画 `glow-pulse`、`btn-press-active` 等在 `index.css` 声明）
-- **UI**: Lucide React、UI-TOOLS Shadow
-- **认证**: Supabase Auth（GitHub OAuth）
+- **图标**: Lucide React
+- **认证**: Supabase Auth (GitHub / Google OAuth)
 - **数据库**: Supabase PostgreSQL（flags 表 + memos 表，RLS 行级安全）
 - **离线缓存**: localStorage 作为本地 fallback
-- **PWA**: vite-plugin-pwa（Service Worker + Manifest）
+- **PWA**: vite-plugin-pwa (支持静默更新与 Service Worker)
 
 ## 🚀 快速启动
 
@@ -92,7 +91,7 @@
    ```bash
    npm run dev
    ```
-7. 打开浏览器访问 `http://localhost:5173`，用 GitHub 登录即可开始使用。
+7. 打开浏览器访问 `http://localhost:5173`，使用 GitHub 或 Google 登录即可开始体验极简效率之旅。
 
 ## 💡 设计理念
 
@@ -108,5 +107,4 @@ This project is licensed under the [MIT License](./LICENSE).
 
 <div align="center">
   <p>If this project helps you, please give it a ⭐. It means a lot to me!</p>
-   <p>如果这个项目对你有帮助，请给它点个⭐。这对我意义很多！</p>
 </div>
