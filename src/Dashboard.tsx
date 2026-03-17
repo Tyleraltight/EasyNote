@@ -284,7 +284,12 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                         placeholder="添加任务，回车确认"
                                         className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 mb-4 text-sm focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all" />
                                     <div className="space-y-2 overflow-y-auto max-h-[250px] sm:max-h-[400px]">
-                                        {[...todos].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).map(todo => (
+                                        {[...todos].sort((a, b) => {
+                                            // Completed items always sink to the bottom
+                                            if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                                            // Among uncompleted items, pinned ones float to the top
+                                            return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+                                        }).map(todo => (
                                             <div key={todo.id} className={`group flex items-center gap-3 p-2 rounded-lg transition-all ${todo.pinned ? 'bg-amber-50/60' : 'hover:bg-slate-50'}`}>
                                                 <button onClick={() => setTodos(todos.map(t => t.id === todo.id ? { ...t, completed: !t.completed } : t))}
                                                     className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${todo.completed ? 'bg-blue-500 border-blue-500' : 'border-slate-300 hover:border-blue-400'}`}>
