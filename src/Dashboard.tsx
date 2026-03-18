@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2, Pin } from 'lucide-react';
+import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2, Pin, Mail } from 'lucide-react';
 import type { Flag, MemoItem } from './types';
 import { COLORS, getColorTheme, todayKey, yesterdayKey } from './types';
 import { useDataSync } from './hooks/useDataSync';
@@ -10,9 +10,10 @@ import type { User } from '@supabase/supabase-js';
 interface DashboardProps {
     user: User;
     onSignOut: () => void;
+    onOpenArchive?: () => void;
 }
 
-export default function Dashboard({ user, onSignOut }: DashboardProps) {
+export default function Dashboard({ user, onSignOut, onOpenArchive }: DashboardProps) {
     // Cloud-synced data via useDataSync
     const { flags, memo, setFlags, setMemo } = useDataSync(user.id);
 
@@ -306,6 +307,13 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                                 </button>
                                             </div>
                                         ))}
+                                    </div>
+                                    <div className="mt-auto pt-6 flex justify-end translate-y-2 sm:translate-y-3">
+                                        <button onClick={onOpenArchive}
+                                            title="查看归档"
+                                            className="w-12 h-12 rounded-full flex items-center justify-center text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-all focus:outline-none">
+                                            <Mail size={24} />
+                                        </button>
                                     </div>
                                 </div>
                             )}

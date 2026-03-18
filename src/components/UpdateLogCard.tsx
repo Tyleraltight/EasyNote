@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Current version — bump this to show the card again on next deploy
-const LOG_VERSION = '1.2.6';
+const LOG_VERSION = '1.2.7';
 const STORAGE_KEY = `easynote-update-seen-${LOG_VERSION}`;
 
 // --- Utility ---
@@ -29,6 +29,17 @@ interface CardItem {
 const CARDS: CardItem[] = [
     {
         id: 0,
+        name: 'System Update',
+        designation: 'Tyler',
+        content: (
+            <div className="space-y-3">
+                <p>1. 增加了待办完成后的 <Highlight>归档功能</Highlight></p>
+                <p>2. 信封入口：可直接查看所有完成过的待办项~</p>
+            </div>
+        ),
+    },
+    {
+        id: 1,
         name: 'System Update',
         designation: 'Tyler',
         content: (

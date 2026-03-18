@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import Dashboard from './Dashboard';
 import LoginPage from './components/LoginPage';
 import UpdateLogCard from './components/UpdateLogCard';
+import TodoArchive from './components/TodoArchive';
 
 export default function App() {
   const { user, loading, signInWithGitHub, signInWithGoogle, signOut } = useAuth();
+  const [view, setView] = useState<'dashboard' | 'archive'>('dashboard');
 
   // Show nothing while checking auth state
   if (loading) {
@@ -21,7 +24,11 @@ export default function App() {
 
   return (
     <>
-      <Dashboard user={user} onSignOut={signOut} />
+      {view === 'dashboard' ? (
+        <Dashboard user={user} onSignOut={signOut} onOpenArchive={() => setView('archive')} />
+      ) : (
+        <TodoArchive user={user} onSignOut={signOut} onBack={() => setView('dashboard')} />
+      )}
       <UpdateLogCard />
     </>
   );
