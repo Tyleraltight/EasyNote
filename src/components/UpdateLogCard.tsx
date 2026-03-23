@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Current version — bump this to show the card again on next deploy
-const LOG_VERSION = '1.2.7';
+const LOG_VERSION = '1.2.8';
 const STORAGE_KEY = `easynote-update-seen-${LOG_VERSION}`;
 
 // --- Utility ---
@@ -33,13 +33,24 @@ const CARDS: CardItem[] = [
         designation: 'Tyler',
         content: (
             <div className="space-y-3">
+                <p>1. 新增 <Highlight>完成总结</Highlight> 页面：点击进度回顾旁的小图标，查看所有 Flag 的打卡统计、连续天数和月度分布</p>
+                <p>2. 新增 <Highlight>每周回顾弹窗</Highlight>：每周首次打开自动弹出上周完成情况总结</p>
+            </div>
+        ),
+    },
+    {
+        id: 1,
+        name: 'System Update',
+        designation: 'Tyler',
+        content: (
+            <div className="space-y-3">
                 <p>1. 增加了待办完成后的 <Highlight>归档功能</Highlight></p>
                 <p>2. 信封入口：可直接查看所有完成过的待办项~</p>
             </div>
         ),
     },
     {
-        id: 1,
+        id: 2,
         name: 'System Update',
         designation: 'Tyler',
         content: (
@@ -51,7 +62,7 @@ const CARDS: CardItem[] = [
         ),
     },
     {
-        id: 1,
+        id: 3,
         name: 'System Update',
         designation: 'Tyler',
         content: (

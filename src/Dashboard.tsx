@@ -1,19 +1,21 @@
 import { useState, useCallback } from 'react';
-import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2, Pin, Mail } from 'lucide-react';
+import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2, Pin, Mail, BookOpen } from 'lucide-react';
 import type { Flag, MemoItem } from './types';
 import { COLORS, getColorTheme, todayKey, yesterdayKey } from './types';
 import { useDataSync } from './hooks/useDataSync';
 import UserMenu from './components/UserMenu';
 import CongratsOverlay from './components/CongratsOverlay';
+import WeeklySummaryPopup, { useWeeklyPopup } from './components/WeeklySummaryPopup';
 import type { User } from '@supabase/supabase-js';
 
 interface DashboardProps {
     user: User;
     onSignOut: () => void;
     onOpenArchive?: () => void;
+    onOpenSummary?: () => void;
 }
 
-export default function Dashboard({ user, onSignOut, onOpenArchive }: DashboardProps) {
+export default function Dashboard({ user, onSignOut, onOpenArchive, onOpenSummary }: DashboardProps) {
     // Cloud-synced data via useDataSync
     const { flags, memo, setFlags, setMemo } = useDataSync(user.id);
 
@@ -40,6 +42,9 @@ export default function Dashboard({ user, onSignOut, onOpenArchive }: DashboardP
     // Drag & drop state
     const [dragId, setDragId] = useState<string | null>(null);
     const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+    // Weekly summary popup
+    const [showWeeklyPopup, dismissWeeklyPopup] = useWeeklyPopup();
 
     // Show toast helper
     const showToast = useCallback((msg: string) => {
@@ -392,9 +397,16 @@ export default function Dashboard({ user, onSignOut, onOpenArchive }: DashboardP
                         {flags.length > 0 && (
                             <div className="pt-8 border-t border-slate-100">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-xl font-bold flex items-center gap-2">
-                                        <Bell size={20} /> 进度回顾
-                                    </h2>
+                                    <div className="flex items-center gap-3">
+                                        <h2 className="text-xl font-bold flex items-center gap-2">
+                                            <Bell size={20} /> 进度回顾
+                                        </h2>
+                                        <button onClick={onOpenSummary}
+                                            title="完成总结"
+                                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all">
+                                            <BookOpen size={16} className="text-slate-500" />
+                                        </button>
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <button onClick={goToPrevMonth}
                                             className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all">
@@ -546,6 +558,11 @@ export default function Dashboard({ user, onSignOut, onOpenArchive }: DashboardP
                 <div className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-rose-600 text-white text-sm font-bold rounded-2xl shadow-2xl animate-[fadeIn_0.2s_ease-out]">
                     {toast}
                 </div>
+            )}
+
+            {/* Weekly summary popup */}
+            {showWeeklyPopup && (
+                <WeeklySummaryPopup flags={flags} onDismiss={dismissWeeklyPopup} />
             )}
         </div>
     );

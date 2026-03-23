@@ -4,10 +4,11 @@ import Dashboard from './Dashboard';
 import LoginPage from './components/LoginPage';
 import UpdateLogCard from './components/UpdateLogCard';
 import TodoArchive from './components/TodoArchive';
+import FlagSummary from './components/FlagSummary';
 
 export default function App() {
   const { user, loading, signInWithGitHub, signInWithGoogle, signOut } = useAuth();
-  const [view, setView] = useState<'dashboard' | 'archive'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'archive' | 'summary'>('dashboard');
 
   // Show nothing while checking auth state
   if (loading) {
@@ -25,9 +26,11 @@ export default function App() {
   return (
     <>
       {view === 'dashboard' ? (
-        <Dashboard user={user} onSignOut={signOut} onOpenArchive={() => setView('archive')} />
-      ) : (
+        <Dashboard user={user} onSignOut={signOut} onOpenArchive={() => setView('archive')} onOpenSummary={() => setView('summary')} />
+      ) : view === 'archive' ? (
         <TodoArchive user={user} onSignOut={signOut} onBack={() => setView('dashboard')} />
+      ) : (
+        <FlagSummary user={user} onSignOut={signOut} onBack={() => setView('dashboard')} />
       )}
       <UpdateLogCard />
     </>
