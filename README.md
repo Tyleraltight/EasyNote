@@ -2,8 +2,8 @@
 
 **EasyNote** 是一款极简主义风格的个人效率管理应用，结合了**年度目标（Flag）追踪**、**随手记/待办事项**以及**日历进度回顾**功能。支持 GitHub / Google 快捷登录与 Supabase 云端同步，在手机和电脑上随时查看同一份数据。
 
-🌐 **在线体验**：[https://easy-note-delta.vercel.app/#](https://easy-note-delta.vercel.app/#)
-> 目前支持 GitHub 及 Google 双通道无密登录。
+🌐 **官方网址（推荐）**：[https://www.easynote.date/](https://www.easynote.date/)
+> V1.3 更新：已配置 Cloudflare 全球加速与自动路由，国内网络环境可直连访问。
 
 <div align="center">
   <img src="src/assets/mockup1.png" alt="EasyNote Dashboard Screenshot" width="800"/>
@@ -11,21 +11,19 @@
 
 ---
 
-## 🌐 网络连接指南（必读）
+## 🌐 网络体验指南
 
-由于目前尚未配置国内 DNS 优化及专属域名，初次使用时请参考以下步骤：
+EasyNote 已在 Cloudflare 节点部署，为全球（包括中国大陆）提供顺畅的网络访问体验。
 
-### 首次使用（环境准备）
-> **要求**：第一次访问并登录账号时，需开启 VPN 以确保顺利通过身份验证并获取配置。
+### 访问状态
+> **国内直连**：已启用自动域名解析与 Cloudflare CDN 优化，**无需挂载 VPN 代理即可稳定全功能访问**。
 
-### 后续使用（日常访问）
-> **优化**：一旦完成首次部署与登录，后续使用无需再挂 VPN。
->
-> **同步条件**：在常规网络环境下，保持设备联网即可实现随时随地的数据同步与更新。
+### 多边同步
+> **无缝数据更新**：在常规网络环境下，保持设备联网即可实现所有终端（手机/电脑）上的高实时数据双向同步。在网络离线时也可通过本地缓存回退支持（Offline-First）。
 
-### 当前状态
-- **访问地址**：临时采用 IP/二级域名访问（正式域名选购中）。
-- **部署方式**：支持 Web 访问及本地环境运行。
+### 部署方式
+- **正式地址**：[https://www.easynote.date/](https://www.easynote.date/)
+- **本地运行**：通过 `npm run dev` 在本地环境运行。
 
 ---
 
