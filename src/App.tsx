@@ -5,10 +5,12 @@ import LoginPage from './components/LoginPage';
 import UpdateLogCard from './components/UpdateLogCard';
 import TodoArchive from './components/TodoArchive';
 import FlagSummary from './components/FlagSummary';
+import PrivacyPolicy from './components/PrivacyPolicy';
 
 export default function App() {
   const { user, loading, signInWithGitHub, signInWithGoogle, signOut } = useAuth();
   const [view, setView] = useState<'dashboard' | 'archive' | 'summary'>('dashboard');
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Show nothing while checking auth state
   if (loading) {
@@ -19,8 +21,25 @@ export default function App() {
     );
   }
 
+  const privacyFooter = (
+    <footer className="py-4 text-center">
+      <button
+        onClick={() => setShowPrivacy(true)}
+        className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+      >
+        隐私政策与免责声明（Privacy Policy & Disclaimer）
+      </button>
+    </footer>
+  );
+
   if (!user) {
-    return <LoginPage onLoginGithub={signInWithGitHub} onLoginGoogle={signInWithGoogle} loading={false} />;
+    return (
+      <>
+        <LoginPage onLoginGithub={signInWithGitHub} onLoginGoogle={signInWithGoogle} loading={false} />
+        {privacyFooter}
+        {showPrivacy && <PrivacyPolicy onClose={() => setShowPrivacy(false)} />}
+      </>
+    );
   }
 
   return (
@@ -33,6 +52,8 @@ export default function App() {
         <FlagSummary user={user} onSignOut={signOut} onBack={() => setView('dashboard')} />
       )}
       <UpdateLogCard />
+      {privacyFooter}
+      {showPrivacy && <PrivacyPolicy onClose={() => setShowPrivacy(false)} />}
     </>
   );
 }
