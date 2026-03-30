@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
+import { Analytics } from '@vercel/analytics/react'
 
 // PWA auto-update and reload mechanism
 if ('serviceWorker' in navigator) {
@@ -31,5 +32,6 @@ if ('serviceWorker' in navigator) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
+    <Analytics />
   </StrictMode>,
 )
