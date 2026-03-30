@@ -10,7 +10,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
+        globIgnores: ['**/assets/appstore-images/**', '**/assets/mockup*'],
+        navigateFallback: 'index.html',
       },
       manifest: {
         name: 'EasyNote',
@@ -29,21 +31,16 @@ export default defineConfig({
         related_applications: [],
         icons: [
           {
-            src: '/assets/appstore-images/android/launchericon-192x192.png',
+            src: '/icon-192-v3.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/assets/appstore-images/android/launchericon-512x512.png',
+            src: '/icon-512-v3.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
-          },
-          {
-            src: '/assets/appstore-images/windows/StoreLogo.scale-400.png',
-            sizes: '200x200',
-            type: 'image/png',
           },
         ],
         screenshots: [
