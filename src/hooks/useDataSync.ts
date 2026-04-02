@@ -3,33 +3,63 @@ import { supabase } from '../lib/supabase';
 import type { Flag, MemoData } from '../types';
 import { getWeekId, getMonthId } from '../types';
 
-const FLAGS_KEY = 'annual-flags';
-const MEMO_KEY = 'todo-flag-memo';
+const FLAGS_KEY_BASE = 'annual-flags';
+const MEMO_KEY_BASE = 'todo-flag-memo';
+
+// Generate user-scoped localStorage keys
+function flagsKey(userId: string | null) {
+    return userId ? `${FLAGS_KEY_BASE}:${userId}` : FLAGS_KEY_BASE;
+}
+function memoKey(userId: string | null) {
+    return userId ? `${MEMO_KEY_BASE}:${userId}` : MEMO_KEY_BASE;
+}
 
 // ── Local cache helpers ──
 
-function readLocalFlags(): Flag[] {
+function readLocalFlags(userId: string | null): Flag[] {
     try {
-        const raw = localStorage.getItem(FLAGS_KEY);
+        const raw = localStorage.getItem(flagsKey(userId));
         if (raw) return JSON.parse(raw);
     } catch { /* ignore */ }
     return [];
 }
 
-function readLocalMemo(): MemoData {
+function readLocalMemo(userId: string | null): MemoData {
     try {
-        const raw = localStorage.getItem(MEMO_KEY);
+        const raw = localStorage.getItem(memoKey(userId));
         if (raw) return JSON.parse(raw);
     } catch { /* ignore */ }
     return { mode: 'note', text: '', todos: [] };
 }
 
-function writeLocalFlags(flags: Flag[]) {
-    try { localStorage.setItem(FLAGS_KEY, JSON.stringify(flags)); } catch { /* ignore */ }
+function writeLocalFlags(flags: Flag[], userId: string | null) {
+    try { localStorage.setItem(flagsKey(userId), JSON.stringify(flags)); } catch { /* ignore */ }
 }
 
-function writeLocalMemo(memo: MemoData) {
-    try { localStorage.setItem(MEMO_KEY, JSON.stringify(memo)); } catch { /* ignore */ }
+function writeLocalMemo(memo: MemoData, userId: string | null) {
+    try { localStorage.setItem(memoKey(userId), JSON.stringify(memo)); } catch { /* ignore */ }
+}
+
+// Read old global keys (for one-time migration from pre-isolation versions)
+function readLegacyFlags(): Flag[] {
+    try {
+        const raw = localStorage.getItem(FLAGS_KEY_BASE);
+        if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return [];
+}
+function readLegacyMemo(): MemoData {
+    try {
+        const raw = localStorage.getItem(MEMO_KEY_BASE);
+        if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return { mode: 'note', text: '', todos: [] };
+}
+function clearLegacyKeys() {
+    try {
+        localStorage.removeItem(FLAGS_KEY_BASE);
+        localStorage.removeItem(MEMO_KEY_BASE);
+    } catch { /* ignore */ }
 }
 
 // ── Supabase row → Flag conversion ──
@@ -100,15 +130,15 @@ export function useDataSync(userId: string | null) {
         initialLoadDone.current = false;
 
         if (!userId) {
-            // Not logged in: use localStorage only
-            const localFlags = readLocalFlags();
+            // Not logged in: use localStorage only (global keys)
+            const localFlags = readLocalFlags(null);
             const lastWeek = localStorage.getItem('easynote-last-week') || '';
             const lastMonth = localStorage.getItem('easynote-last-month') || '';
             const { flags: resetFlags } = applyCycleReset(localFlags, lastWeek, lastMonth);
             localStorage.setItem('easynote-last-week', getWeekId());
             localStorage.setItem('easynote-last-month', getMonthId());
             setFlags(resetFlags);
-            setMemo(readLocalMemo());
+            setMemo(readLocalMemo(null));
             setLoaded(true);
             initialLoadDone.current = true;
             return;
@@ -125,17 +155,27 @@ export function useDataSync(userId: string | null) {
                 const remoteFlagsExist = flagRows && flagRows.length > 0;
                 const remoteMemoExists = memoRow && (memoRow.text || memoRow.todos?.length > 0);
 
-                // Check for local data to migrate
-                const localFlags = readLocalFlags();
-                const localMemo = readLocalMemo();
-                const localFlagsExist = localFlags.length > 0;
-                const localMemoExists = localMemo.text || localMemo.todos.length > 0;
+                // Check for user-scoped local cache first
+                const userLocalFlags = readLocalFlags(userId);
+
+                // Only consider legacy (global) localStorage for migration if:
+                // 1. User has NO remote data
+                // 2. User has NO user-scoped local cache
+                // 3. There IS data in the old global keys
+                // This handles the case where a user used the app before login was added.
+                // It does NOT migrate data from another user's session.
+                const legacyFlags = readLegacyFlags();
+                const legacyMemo = readLegacyMemo();
+                const shouldMigrateLegacy = !remoteFlagsExist 
+                    && userLocalFlags.length === 0
+                    && legacyFlags.length > 0
+                    && !localStorage.getItem(`easynote-migrated:${userId}`);
 
                 let loadedFlags: Flag[] = [];
 
-                // Migration: push local data to Supabase if remote is empty but local has data
-                if (!remoteFlagsExist && localFlagsExist) {
-                    const rows = localFlags.map((f, i) => ({
+                if (shouldMigrateLegacy) {
+                    // One-time migration from pre-login localStorage to Supabase
+                    const rows = legacyFlags.map((f, i) => ({
                         id: f.id,
                         user_id: userId,
                         name: f.name,
@@ -149,10 +189,14 @@ export function useDataSync(userId: string | null) {
                         sort_order: i,
                     }));
                     await supabase.from('flags').upsert(rows);
-                    loadedFlags = localFlags;
+                    loadedFlags = legacyFlags;
+                    // Mark migration done so it never runs again for this user
+                    localStorage.setItem(`easynote-migrated:${userId}`, 'true');
+                    // Clean up global keys to prevent leaking to other users
+                    clearLegacyKeys();
                 } else if (remoteFlagsExist) {
                     loadedFlags = (flagRows as FlagRow[]).map(rowToFlag);
-                    writeLocalFlags(loadedFlags);
+                    writeLocalFlags(loadedFlags, userId);
                 }
 
                 // Cycle reset using Supabase-stored last_week/last_month
@@ -191,16 +235,17 @@ export function useDataSync(userId: string | null) {
 
                 setFlags(resetFlags);
 
-                if (!remoteMemoExists && localMemoExists) {
+                if (shouldMigrateLegacy && !remoteMemoExists && (legacyMemo.text || legacyMemo.todos.length > 0)) {
+                    // Migrate legacy memo along with flags
                     await supabase.from('memos').upsert({
                         user_id: userId,
-                        mode: localMemo.mode,
-                        text: localMemo.text,
-                        todos: localMemo.todos,
+                        mode: legacyMemo.mode,
+                        text: legacyMemo.text,
+                        todos: legacyMemo.todos,
                         last_week: currentWeek,
                         last_month: currentMonth,
                     });
-                    setMemo(localMemo);
+                    setMemo(legacyMemo);
                 } else if (remoteMemoExists) {
                     const parsed: MemoData = {
                         mode: memoRow.mode,
@@ -208,14 +253,14 @@ export function useDataSync(userId: string | null) {
                         todos: memoRow.todos || [],
                     };
                     setMemo(parsed);
-                    writeLocalMemo(parsed);
+                    writeLocalMemo(parsed, userId);
                 } else {
                     setMemo({ mode: 'note', text: '', todos: [] });
                 }
             } catch (err) {
                 console.warn('Supabase load failed, falling back to localStorage:', err);
-                setFlags(readLocalFlags());
-                setMemo(readLocalMemo());
+                setFlags(readLocalFlags(userId));
+                setMemo(readLocalMemo(userId));
             }
 
             setLoaded(true);
@@ -228,7 +273,7 @@ export function useDataSync(userId: string | null) {
         if (!loaded || !initialLoadDone.current) return;
 
         // Always write to localStorage as cache
-        writeLocalFlags(flags);
+        writeLocalFlags(flags, userId);
 
         if (!userId) return;
 
@@ -274,7 +319,7 @@ export function useDataSync(userId: string | null) {
         if (!loaded || !initialLoadDone.current) return;
 
         // Always write to localStorage as cache
-        writeLocalMemo(memo);
+        writeLocalMemo(memo, userId);
 
         if (!userId) return;
 

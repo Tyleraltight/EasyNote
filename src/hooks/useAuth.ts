@@ -58,6 +58,22 @@ export function useAuth() {
     }, []);
 
     const signOut = useCallback(async () => {
+        // Clear all user data from localStorage to prevent data leaking to next user
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (
+                key === 'annual-flags' ||
+                key === 'todo-flag-memo' ||
+                key.startsWith('annual-flags:') ||
+                key.startsWith('todo-flag-memo:') ||
+                key.startsWith('easynote-')
+            )) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+
         await supabase.auth.signOut();
     }, []);
 
