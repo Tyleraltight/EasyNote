@@ -1,26 +1,10 @@
 # EasyNote 📝
 
-**EasyNote** is a minimalist personal productivity app combining **Annual Flag/Goal Tracking**, **Quick Notes & To-dos**, and **Monthly Check-in History**. Powered by GitHub OAuth and Supabase cloud sync, seamlessly access your data across mobile and desktop devices.
+**EasyNote** is a minimalist personal productivity app combining **Annual Flag/Goal Tracking**, **Quick Notes & To-dos**, and **Monthly Check-in History**. Powered by GitHub & Google OAuth and Supabase cloud sync, seamlessly access your data across mobile and desktop devices.
 
-🌐 **Live Demo**: [https://easy-note-delta.vercel.app/#](https://easy-note-delta.vercel.app/#)
-
-<div align="center">
-  <img src="src/assets/mockup1.png" alt="EasyNote Dashboard Screenshot" width="800"/>
-</div>
+🌐 **Live Demo**: [https://www.easynote.date/](https://www.easynote.date/)
 
 English | [简体中文](./README.md)
-
----
-
-## 🌐 Network & Access Guide
-
-### First-Time Setup
-> **Note**: When signing in for the first time, ensure a VPN/stable connection is available for OAuth authentication and configuration fetch if needed.
-
-### Regular Usage
-> **Optimization**: Once logged in, no proxy/VPN is required for daily usage.
->
-> **Sync Requirement**: Connected to the internet, your device will auto-sync changes in real time.
 
 ---
 
