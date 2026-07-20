@@ -1,0 +1,98 @@
+{
+  "app": {
+    "title": "EasyNote",
+    "subtitle": "Minimalist Habit Tracker & Notes",
+    "cloudSynced": "Cloud Sync Active",
+    "offline": "Offline Mode"
+  },
+  "flags": {
+    "title": "Target Flags",
+    "subtitle": "Click card to increment, drag to reorder",
+    "empty": "No flags yet. Click 'Set a Flag' below to get started!",
+    "createBtn": "Set a Flag",
+    "completed": "Goal Reached!",
+    "resetBtn": "Reset Goal",
+    "makeupBtn": "Make-up Yesterday",
+    "makeUpSuccess": "Checked in for yesterday ✅",
+    "deleteConfirm": "Are you sure you want to delete this flag?",
+    "cycle": {
+      "none": "No Reset",
+      "weekly": "Weekly Reset",
+      "monthly": "Monthly Reset"
+    }
+  },
+  "modal": {
+    "createTitle": "Set a New Flag",
+    "editTitle": "Edit Flag",
+    "namePlaceholder": "Flag name (e.g. Read 5 books, Daily Workout)",
+    "targetCount": "Target Count",
+    "unitLabel": "Unit",
+    "unitPlaceholder": "times/days/books/hrs",
+    "cycleLabel": "Reset Cycle",
+    "cancel": "Cancel",
+    "submitCreate": "Create Flag",
+    "submitSave": "Save Changes"
+  },
+  "calendar": {
+    "title": "Monthly Check-in History",
+    "prevMonth": "Previous Month",
+    "nextMonth": "Next Month",
+    "weekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  },
+  "memo": {
+    "title": "Minimalist Memo",
+    "modeNote": "Notes",
+    "modeTodo": "To-dos",
+    "notePlaceholder": "Jot down ideas anytime...\nTip: Lines with numbers (e.g. 'Read 5 books') can be converted to Flags via the right button",
+    "convertToFlag": "Convert to Flag",
+    "todoPlaceholder": "Type a to-do item and press Enter...",
+    "todoEmpty": "No to-do items yet",
+    "clearAll": "Clear Completed"
+  },
+  "login": {
+    "subtitle": "Minimalist Personal Productivity Management",
+    "githubLogin": "Sign in with GitHub",
+    "googleLogin": "Sign in with Google",
+    "loggingIn": "Redirecting...",
+    "syncNotice": "Your data syncs seamlessly across devices when signed in"
+  },
+  "userMenu": {
+    "signOut": "Sign Out"
+  },
+  "updateLog": {
+    "title": "Update Log",
+    "dismissHint": "Click anywhere outside to close",
+    "systemUpdate": "System Update",
+    "log0": {
+      "item1_1": "1. Added ",
+      "item1_highlight": "Multilingual Support (ZH/EN)",
+      "item1_2": " for global users",
+      "item2_1": "2. Auto-detect ",
+      "item2_highlight": "System Preferred Language",
+      "item2_2": " with preference persistence",
+      "item3": "3. Enhanced global accessibility & UX improvements"
+    },
+    "log1": {
+      "item1_1": "1. Completed to-dos auto-move to bottom — Priority: ",
+      "item1_highlight": "Uncompleted Pinned",
+      "item1_2": " → Uncompleted Normal → Completed",
+      "item2_1": "2. Brand new ",
+      "item2_highlight": "LOGO",
+      "item3": "3. Enjoy using EasyNote, feedback is always welcome!"
+    },
+    "log2": {
+      "item1_1": "1. Added one-click ",
+      "item1_highlight": "Google",
+      "item1_2": " OAuth sign-in support",
+      "item2_1": "2. Optimized PWA ",
+      "item2_highlight": "Silent Updates",
+      "item2_2": " experience",
+      "item3": "3. Performance and stability enhancements"
+    }
+  },
+  "language": {
+    "zh": "简体中文",
+    "en": "English",
+    "select": "Language / 语言"
+  }
+}

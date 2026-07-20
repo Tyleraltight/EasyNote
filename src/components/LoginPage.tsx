@@ -1,4 +1,5 @@
-import { Github } from 'lucide-react';
+import { Github, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface LoginPageProps {
     onLoginGithub: () => void;
@@ -7,35 +8,53 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ onLoginGithub, onLoginGoogle, loading }: LoginPageProps) {
+    const { t, i18n } = useTranslation();
+
+    const toggleLanguage = () => {
+        const nextLang = i18n.language.startsWith('zh') ? 'en' : 'zh';
+        i18n.changeLanguage(nextLang);
+    };
+
     return (
-        <div className="min-h-screen font-[Inter,system-ui,sans-serif] flex items-center justify-center">
+        <div className="min-h-screen font-[Inter,system-ui,sans-serif] flex items-center justify-center relative">
             {/* Background - same as Dashboard */}
             <div className="fixed inset-0 -z-10 h-full w-full bg-[#f8fafc]">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#0000001a_1px,transparent_1px),linear-gradient(to_bottom,#0000001a_1px,transparent_1px)] bg-[size:24px_24px]" />
                 <div className="absolute inset-0 bg-[radial-gradient(125%_125%_at_50%_10%,rgba(249,115,22,0.2)_40%,rgba(248,250,252,1)_100%)]" />
             </div>
 
-            <div className="text-center">
+            {/* Language switch button top-right */}
+            <div className="absolute top-6 right-6">
+                <button
+                    onClick={toggleLanguage}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-white transition-all shadow-xs cursor-pointer"
+                >
+                    <Globe size={14} className="text-slate-400" />
+                    {i18n.language.startsWith('zh') ? 'English' : '简体中文'}
+                </button>
+            </div>
+
+            <div className="text-center px-4">
                 <h1 className="text-5xl font-black tracking-tight text-slate-800 mb-3">EasyNote</h1>
-                <p className="text-slate-400 font-medium mb-12">极简个人效率管理</p>
+                <p className="text-slate-400 font-medium mb-12">{t('login.subtitle')}</p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <button
                         onClick={onLoginGithub}
                         disabled={loading}
                         className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl text-base font-bold
-                                   hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all shadow-xl
+                                   hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all shadow-xl cursor-pointer
                                    disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Github size={22} />
-                        {loading ? '正在跳转...' : 'GitHub 登录'}
+                        {loading ? t('login.loggingIn') : t('login.githubLogin')}
                     </button>
 
                     <button
                         onClick={onLoginGoogle}
                         disabled={loading}
                         className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 bg-white text-slate-700 rounded-2xl text-base font-bold
-                                   hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all shadow-xl border border-slate-200
+                                   hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all shadow-xl border border-slate-200 cursor-pointer
                                    disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
@@ -44,11 +63,11 @@ export default function LoginPage({ onLoginGithub, onLoginGoogle, loading }: Log
                             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                         </svg>
-                        {loading ? '正在跳转...' : 'Google 登录'}
+                        {loading ? t('login.loggingIn') : t('login.googleLogin')}
                     </button>
                 </div>
 
-                <p className="mt-6 text-xs text-slate-300">登录后数据将跨设备同步</p>
+                <p className="mt-6 text-xs text-slate-300">{t('login.syncNotice')}</p>
             </div>
         </div>
     );

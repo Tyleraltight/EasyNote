@@ -6,6 +6,7 @@ export interface Flag {
     total: number;
     unit: string;
     color: string;
+    cycle?: 'none' | 'weekly' | 'monthly';
     history: string[];
     reminder: Reminder | null;
 }
@@ -21,6 +22,7 @@ export interface MemoItem {
     id: string;
     text: string;
     completed: boolean;
+    pinned?: boolean;
 }
 
 export interface MemoData {
@@ -44,4 +46,10 @@ export function getColorTheme(colorValue: string) {
 
 export function todayKey() {
     return new Date().toISOString().split('T')[0];
+}
+
+export function yesterdayKey() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
 }

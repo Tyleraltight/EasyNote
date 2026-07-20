@@ -9,6 +9,8 @@
   <img src="src/assets/mockup1.png" alt="EasyNote Dashboard Screenshot" width="800"/>
 </div>
 
+[English](./README_EN.md) | 简体中文
+
 ---
 
 ## 🌐 网络连接指南（必读）

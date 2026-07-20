@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 // Current version — bump this to show the card again on next deploy
-const LOG_VERSION = '1.2.6';
+const LOG_VERSION = '1.3.0';
 const STORAGE_KEY = `easynote-update-seen-${LOG_VERSION}`;
 
 // --- Utility ---
@@ -18,43 +19,8 @@ function Highlight({ children, className }: { children: React.ReactNode; classNa
     );
 }
 
-// --- Card data ---
-interface CardItem {
-    id: number;
-    name: string;
-    designation: string;
-    content: React.ReactNode;
-}
-
-const CARDS: CardItem[] = [
-    {
-        id: 0,
-        name: 'System Update',
-        designation: 'Tyler',
-        content: (
-            <div className="space-y-3">
-                <p>1. 待办完成后自动沉底 — 优先级：<Highlight>未完成置顶</Highlight> → 未完成普通 → 已完成</p>
-                <p>2. 换上了全新的 <Highlight>LOGO</Highlight></p>
-                <p>3. 使用愉快，欢迎更多反馈！~</p>
-            </div>
-        ),
-    },
-    {
-        id: 1,
-        name: 'System Update',
-        designation: 'Tyler',
-        content: (
-            <div className="space-y-3">
-                <p>1. 新增 <Highlight>Google</Highlight> 账号一键无感登录支持</p>
-                <p>2. 优化 PWA <Highlight>静默更新</Highlight> 体验，告别手动重载</p>
-                <p>3. 基础体验与稳定性提升</p>
-            </div>
-        ),
-    },
-];
-
 // --- Card Stack ---
-function CardStack({ items }: { items: CardItem[] }) {
+function CardStack({ items }: { items: Array<{ id: number; name: string; designation: string; content: React.ReactNode }> }) {
     return (
         <div className="relative h-72 w-80 md:w-[400px]">
             {items.map((card, index) => (
@@ -98,6 +64,7 @@ function CardStack({ items }: { items: CardItem[] }) {
 // --- Main Overlay ---
 export default function UpdateLogCard() {
     const [visible, setVisible] = useState(false);
+    const { t } = useTranslation();
 
     useEffect(() => {
         // Show only if user hasn't seen this version yet
@@ -111,6 +78,45 @@ export default function UpdateLogCard() {
         setVisible(false);
         localStorage.setItem(STORAGE_KEY, 'true');
     };
+
+    const cards = [
+        {
+            id: 0,
+            name: t('updateLog.systemUpdate'),
+            designation: 'Tyler',
+            content: (
+                <div className="space-y-3">
+                    <p>{t('updateLog.log0.item1_1')}<Highlight>{t('updateLog.log0.item1_highlight')}</Highlight>{t('updateLog.log0.item1_2')}</p>
+                    <p>{t('updateLog.log0.item2_1')}<Highlight>{t('updateLog.log0.item2_highlight')}</Highlight>{t('updateLog.log0.item2_2')}</p>
+                    <p>{t('updateLog.log0.item3')}</p>
+                </div>
+            ),
+        },
+        {
+            id: 1,
+            name: t('updateLog.systemUpdate'),
+            designation: 'Tyler',
+            content: (
+                <div className="space-y-3">
+                    <p>{t('updateLog.log1.item1_1')}<Highlight>{t('updateLog.log1.item1_highlight')}</Highlight>{t('updateLog.log1.item1_2')}</p>
+                    <p>{t('updateLog.log1.item2_1')}<Highlight>{t('updateLog.log1.item2_highlight')}</Highlight></p>
+                    <p>{t('updateLog.log1.item3')}</p>
+                </div>
+            ),
+        },
+        {
+            id: 2,
+            name: t('updateLog.systemUpdate'),
+            designation: 'Tyler',
+            content: (
+                <div className="space-y-3">
+                    <p>{t('updateLog.log2.item1_1')}<Highlight>{t('updateLog.log2.item2_highlight')}</Highlight>{t('updateLog.log2.item1_2')}</p>
+                    <p>{t('updateLog.log2.item2_1')}<Highlight>{t('updateLog.log2.item2_highlight')}</Highlight>{t('updateLog.log2.item2_2')}</p>
+                    <p>{t('updateLog.log2.item3')}</p>
+                </div>
+            ),
+        },
+    ];
 
     return (
         <AnimatePresence>
@@ -135,7 +141,7 @@ export default function UpdateLogCard() {
                         transition={{ duration: 0.35, ease: [0.25, 1, 0.5, 1] }}
                         onClick={e => e.stopPropagation()}
                     >
-                        <CardStack items={CARDS} />
+                        <CardStack items={cards} />
                     </motion.div>
 
                     {/* Background watermark */}
@@ -152,7 +158,7 @@ export default function UpdateLogCard() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.5 }}
                     >
-                        点击空白处关闭
+                        {t('updateLog.dismissHint')}
                     </motion.p>
                 </motion.div>
             )}

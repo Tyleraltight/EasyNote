@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
-import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2, Pin } from 'lucide-react';
+import { Plus, Check, X, StickyNote, ListTodo, Trash2, Bell, ChevronLeft, ChevronRight, Zap, RotateCcw, CalendarCheck2, Pin, Globe, PartyPopper } from 'lucide-react';
 import type { Flag, MemoItem } from './types';
 import { COLORS, getColorTheme, todayKey, yesterdayKey } from './types';
 import { useDataSync } from './hooks/useDataSync';
 import UserMenu from './components/UserMenu';
-import CongratsOverlay from './components/CongratsOverlay';
 import type { User } from '@supabase/supabase-js';
+import { useTranslation } from 'react-i18next';
 
 interface DashboardProps {
     user: User;
@@ -13,6 +13,10 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ user, onSignOut }: DashboardProps) {
+    const { t, i18n } = useTranslation();
+    const isZh = i18n.language.startsWith('zh');
+    const currentLocale = isZh ? 'zh-CN' : 'en-US';
+
     // Cloud-synced data via useDataSync
     const { flags, memo, setFlags, setMemo } = useDataSync(user.id);
 
@@ -30,7 +34,13 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
     };
 
     const [isFlagModalOpen, setIsFlagModalOpen] = useState(false);
-    const [newFlag, setNewFlag] = useState({ name: '', total: 10, unit: '次', color: COLORS[0].value, cycle: 'none' as 'none' | 'weekly' | 'monthly' });
+    const [newFlag, setNewFlag] = useState({
+        name: '',
+        total: 10,
+        unit: isZh ? '次' : 'times',
+        color: COLORS[0].value,
+        cycle: 'none' as 'none' | 'weekly' | 'monthly'
+    });
     const [newTodo, setNewTodo] = useState('');
     const [pressedId, setPressedId] = useState<string | null>(null);
     const [toast, setToast] = useState<string | null>(null);
@@ -52,17 +62,18 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
         return { year: now.getFullYear(), month: now.getMonth() };
     });
 
-
+    const toggleLanguage = () => {
+        const nextLang = isZh ? 'en' : 'zh';
+        i18n.changeLanguage(nextLang);
+    };
 
     // Flag actions
     const handleIncrement = (id: string) => {
-        // Trigger press animation
         setPressedId(id);
         setTimeout(() => setPressedId(null), 200);
         setFlags(prev => prev.map(f => {
             if (f.id === id && f.current < f.total) {
                 const next = f.current + 1;
-                // Show congrats when goal is just reached
                 if (next === f.total) {
                     setCongratsFlag(f.name);
                 }
@@ -79,19 +90,17 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
         const yesterday = yesterdayKey();
         setFlags(prev => prev.map(f => {
             if (f.id !== id || f.current >= f.total) return f;
-            // Check if yesterday's count already reached total
             const yesterdayCount = f.history.filter(h => h === yesterday).length;
             if (yesterdayCount >= f.total) return f;
             return { ...f, current: f.current + 1, history: [...f.history, yesterday] };
         }));
-        showToast('已补签昨天 ✅');
+        showToast(t('flags.makeUpSuccess'));
     };
 
     // Auto-pick the next unused color from COLORS pool
     const getNextColor = () => {
         const usedColors = new Set(flags.map(f => f.color));
         const available = COLORS.find(c => !usedColors.has(c.value));
-        // If all colors used, cycle based on count
         return available ? available.value : COLORS[flags.length % COLORS.length].value;
     };
 
@@ -102,14 +111,14 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
             name: newFlag.name.trim(),
             current: 0,
             total: newFlag.total,
-            unit: newFlag.unit || '次',
+            unit: newFlag.unit || (isZh ? '次' : 'times'),
             color: getNextColor(),
             cycle: newFlag.cycle,
             history: [],
             reminder: null,
         };
         setFlags([...flags, flag]);
-        setNewFlag({ name: '', total: 10, unit: '次', color: COLORS[0].value, cycle: 'none' });
+        setNewFlag({ name: '', total: 10, unit: isZh ? '次' : 'times', color: COLORS[0].value, cycle: 'none' });
         setIsFlagModalOpen(false);
     };
 
@@ -117,7 +126,6 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
         setFlags(flags.filter(f => f.id !== id));
     };
 
-    // Reset a completed flag back to zero (preserve history for calendar review)
     const handleResetFlag = (id: string) => {
         setFlags(prev => prev.map(f =>
             f.id === id ? { ...f, current: 0 } : f
@@ -125,9 +133,7 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
     };
 
     // Drag & drop handlers
-    const handleDragStart = (id: string) => {
-        setDragId(id);
-    };
+    const handleDragStart = (id: string) => setDragId(id);
     const handleDragOver = (e: React.DragEvent, id: string) => {
         e.preventDefault();
         if (id !== dragId) setDragOverId(id);
@@ -155,21 +161,19 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
         const numMatch = line.match(/(\d+)/);
         if (!numMatch) return;
         const total = parseInt(numMatch[1]);
-        // Use the line text (minus the number) as the flag name, fallback to full line
         const name = line.replace(/\d+/g, '').replace(/\s+/g, ' ').trim() || line.trim();
         const flag: Flag = {
             id: crypto.randomUUID(),
             name,
             current: 0,
             total,
-            unit: '次',
+            unit: isZh ? '次' : 'times',
             color: getNextColor(),
             cycle: 'none',
             history: [],
             reminder: null,
         };
         setFlags(prev => [...prev, flag]);
-        // Remove the converted line from notes
         const lines = noteContent.split('\n');
         const newLines = lines.filter(l => l !== line);
         setNoteContent(newLines.join('\n'));
@@ -187,10 +191,9 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
     const getMonthDays = (year: number, month: number) => {
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        const startWeekday = firstDay.getDay(); // 0=Sun
+        const startWeekday = firstDay.getDay();
         const totalDays = lastDay.getDate();
         const days: (string | null)[] = [];
-        // Fill leading blanks
         for (let i = 0; i < startWeekday; i++) days.push(null);
         for (let d = 1; d <= totalDays; d++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -198,8 +201,9 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
         }
         return days;
     };
+
     const monthDays = getMonthDays(reviewMonth.year, reviewMonth.month);
-    const monthLabel = new Date(reviewMonth.year, reviewMonth.month).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
+    const monthLabel = new Date(reviewMonth.year, reviewMonth.month).toLocaleDateString(currentLocale, { year: 'numeric', month: 'long' });
     const todayStr = todayKey();
 
     const goToPrevMonth = () => {
@@ -220,7 +224,9 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
     };
 
     const today = new Date();
-    const dateStr = today.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+    const dateStr = today.toLocaleDateString(currentLocale, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+
+    const weekdaysList = (t('calendar.weekdays', { returnObjects: true }) as string[]) || ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
         <div className="min-h-screen font-[Inter,system-ui,sans-serif] text-slate-900 pb-24 sm:pb-20">
@@ -233,10 +239,20 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
             <main className="max-w-[1200px] mx-auto px-4 pt-6 sm:px-8 sm:pt-12">
                 <header className="mb-6 sm:mb-12 flex items-start justify-between">
                     <div>
-                        <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-800">EasyNote</h1>
+                        <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-800">{t('app.title')}</h1>
                         <p className="text-slate-500 font-medium mt-1 sm:mt-2 text-sm sm:text-base">{dateStr}</p>
                     </div>
-                    <UserMenu user={user} onSignOut={onSignOut} />
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={toggleLanguage}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-white transition-all shadow-xs cursor-pointer"
+                            title={t('language.select')}
+                        >
+                            <Globe size={14} className="text-slate-400" />
+                            <span>{isZh ? 'English' : '中文'}</span>
+                        </button>
+                        <UserMenu user={user} onSignOut={onSignOut} />
+                    </div>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 sm:gap-10 items-start">
@@ -246,21 +262,20 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex bg-slate-100 p-1 rounded-xl">
                                     <button onClick={() => setMemoMode('note')}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${memoMode === 'note' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>
-                                        <StickyNote size={16} /> 想法
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${memoMode === 'note' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>
+                                        <StickyNote size={16} /> {t('memo.modeNote')}
                                     </button>
                                     <button onClick={() => setMemoMode('todo')}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${memoMode === 'todo' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>
-                                        <ListTodo size={16} /> 待办
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all cursor-pointer ${memoMode === 'todo' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}>
+                                        <ListTodo size={16} /> {t('memo.modeTodo')}
                                     </button>
                                 </div>
                             </div>
                             {memoMode === 'note' ? (
                                 <div className="flex-1 flex flex-col relative">
                                     <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)}
-                                        placeholder="随时记录你的灵感..."
+                                        placeholder={t('memo.notePlaceholder')}
                                         className="w-full flex-1 bg-transparent border-none focus:ring-0 focus:outline-none resize-none text-slate-700 leading-relaxed placeholder:text-slate-300 pr-10" />
-                                    {/* Line-level convert buttons for lines with numbers */}
                                     {noteContent && (
                                         <div className="absolute right-0 top-0 flex flex-col pointer-events-none" style={{ lineHeight: '1.625rem' }}>
                                             {noteContent.split('\n').map((line, i) => (
@@ -268,8 +283,8 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                                     {/\d+/.test(line) && (
                                                         <button
                                                             onClick={() => convertNoteToFlag(line)}
-                                                            title="转为 Flag"
-                                                            className="pointer-events-auto w-6 h-6 rounded-lg bg-amber-50 hover:bg-amber-100 flex items-center justify-center transition-all hover:scale-110">
+                                                            title={t('memo.convertToFlag')}
+                                                            className="pointer-events-auto w-6 h-6 rounded-lg bg-amber-50 hover:bg-amber-100 flex items-center justify-center transition-all hover:scale-110 cursor-pointer">
                                                             <Zap size={13} className="text-amber-500" />
                                                         </button>
                                                     )}
@@ -281,27 +296,25 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                             ) : (
                                 <div className="flex-1 flex flex-col">
                                     <input type="text" value={newTodo} onChange={e => setNewTodo(e.target.value)} onKeyDown={addTodo}
-                                        placeholder="添加任务，回车确认"
+                                        placeholder={t('memo.todoPlaceholder')}
                                         className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 mb-4 text-sm focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all" />
                                     <div className="space-y-2 overflow-y-auto max-h-[250px] sm:max-h-[400px]">
                                         {[...todos].sort((a, b) => {
-                                            // Completed items always sink to the bottom
                                             if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                                            // Among uncompleted items, pinned ones float to the top
                                             return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
                                         }).map(todo => (
                                             <div key={todo.id} className={`group flex items-center gap-3 p-2 rounded-lg transition-all ${todo.pinned ? 'bg-amber-50/60' : 'hover:bg-slate-50'}`}>
                                                 <button onClick={() => setTodos(todos.map(t => t.id === todo.id ? { ...t, completed: !t.completed } : t))}
-                                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${todo.completed ? 'bg-blue-500 border-blue-500' : 'border-slate-300 hover:border-blue-400'}`}>
+                                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all cursor-pointer ${todo.completed ? 'bg-blue-500 border-blue-500' : 'border-slate-300 hover:border-blue-400'}`}>
                                                     {todo.completed && <Check size={12} className="text-white" />}
                                                 </button>
                                                 <span className={`text-sm flex-1 ${todo.completed ? 'text-slate-300 line-through' : 'text-slate-600'}`}>{todo.text}</span>
                                                 <button onClick={() => setTodos(todos.map(t => t.id === todo.id ? { ...t, pinned: !t.pinned } : t))}
-                                                    className={`p-1 transition-all ${todo.pinned ? 'opacity-100 text-amber-500' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-slate-300 hover:text-amber-500 active:text-amber-500'}`}>
+                                                    className={`p-1 transition-all cursor-pointer ${todo.pinned ? 'opacity-100 text-amber-500' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-slate-300 hover:text-amber-500 active:text-amber-500'}`}>
                                                     <Pin size={14} className={todo.pinned ? 'fill-amber-500' : ''} />
                                                 </button>
                                                 <button onClick={() => setTodos(todos.filter(t => t.id !== todo.id))}
-                                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 active:text-rose-500 transition-all">
+                                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 active:text-rose-500 transition-all cursor-pointer">
                                                     <Trash2 size={14} />
                                                 </button>
                                             </div>
@@ -316,11 +329,11 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                     <section className="space-y-8">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-bold flex items-center gap-2">
-                                <span className="w-2 h-6 bg-slate-900 rounded-full" />年度 Flag
+                                <span className="w-2 h-6 bg-slate-900 rounded-full" />{t('flags.title')}
                             </h2>
                             <button onClick={() => setIsFlagModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-full text-sm font-bold hover:scale-105 active:scale-95 transition-all shadow-lg">
-                                <Plus size={18} /> 新增目标
+                                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-full text-sm font-bold hover:scale-105 active:scale-95 transition-all shadow-lg cursor-pointer">
+                                <Plus size={18} /> {t('flags.createBtn')}
                             </button>
                         </div>
 
@@ -339,7 +352,7 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                             ${dragOverId === flag.id ? 'ring-2 ring-slate-300' : ''}
                                             ${isDone ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100 shadow-sm hover:shadow-md'}`}>
                                         <button onClick={() => handleDeleteFlag(flag.id)}
-                                            className="absolute top-3 right-3 sm:top-4 sm:right-4 opacity-50 sm:opacity-0 sm:group-hover:opacity-50 hover:!opacity-100 active:!opacity-100 text-slate-400 hover:text-rose-500 active:text-rose-500 transition-all">
+                                            className="absolute top-3 right-3 sm:top-4 sm:right-4 opacity-50 sm:opacity-0 sm:group-hover:opacity-50 hover:!opacity-100 active:!opacity-100 text-slate-400 hover:text-rose-500 active:text-rose-500 transition-all cursor-pointer">
                                             <X size={16} />
                                         </button>
                                         <div className="flex justify-between items-start mb-4 sm:mb-6">
@@ -352,19 +365,19 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                             </div>
                                             {isDone ? (
                                                 <button onClick={() => handleResetFlag(flag.id)}
-                                                    title="重置"
-                                                    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all bg-amber-500 text-white hover:bg-amber-600">
+                                                    title={t('flags.resetBtn')}
+                                                    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all bg-amber-500 text-white hover:bg-amber-600 cursor-pointer">
                                                     <RotateCcw size={22} />
                                                 </button>
                                             ) : (
                                                 <div className="flex items-center gap-2">
                                                     <button onClick={() => handleMakeupSign(flag.id)}
-                                                        title="补签昨天"
-                                                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-300 hover:bg-blue-50 hover:text-blue-500">
+                                                        title={t('flags.makeupBtn')}
+                                                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-300 hover:bg-blue-50 hover:text-blue-500 cursor-pointer">
                                                         <CalendarCheck2 size={18} />
                                                     </button>
                                                     <button onClick={() => handleIncrement(flag.id)}
-                                                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm ${pressedId === flag.id ? 'btn-press-active' : ''} bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white`}>
+                                                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm ${pressedId === flag.id ? 'btn-press-active' : ''} bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white cursor-pointer`}>
                                                         <Plus size={24} />
                                                     </button>
                                                 </div>
@@ -377,7 +390,6 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                     </div>
                                 );
                             })}
-
                         </div>
 
                         {/* Progress Review - Monthly Block Calendar */}
@@ -385,19 +397,21 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                             <div className="pt-8 border-t border-slate-100">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-xl font-bold flex items-center gap-2">
-                                        <Bell size={20} /> 进度回顾
+                                        <Bell size={20} /> {t('calendar.title')}
                                     </h2>
                                     <div className="flex items-center gap-2">
                                         <button onClick={goToPrevMonth}
-                                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all">
+                                            title={t('calendar.prevMonth')}
+                                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all cursor-pointer">
                                             <ChevronLeft size={16} className="text-slate-600" />
                                         </button>
                                         <button onClick={goToCurrentMonth}
-                                            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-600 transition-all min-w-[120px] text-center">
+                                            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-600 transition-all min-w-[120px] text-center cursor-pointer">
                                             {monthLabel}
                                         </button>
                                         <button onClick={goToNextMonth}
-                                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all">
+                                            title={t('calendar.nextMonth')}
+                                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all cursor-pointer">
                                             <ChevronRight size={16} className="text-slate-600" />
                                         </button>
                                     </div>
@@ -405,7 +419,7 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                 <div className="bg-white rounded-2xl border border-slate-100 p-3 sm:p-6 shadow-sm">
                                     {/* Weekday headers */}
                                     <div className="grid grid-cols-7 gap-1 mb-2">
-                                        {['日', '一', '二', '三', '四', '五', '六'].map(d => (
+                                        {weekdaysList.map(d => (
                                             <div key={d} className="text-center text-xs font-bold text-slate-400 py-1">{d}</div>
                                         ))}
                                     </div>
@@ -415,10 +429,8 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                             if (!day) return <div key={`blank-${i}`} />;
                                             const dayNum = parseInt(day.split('-')[2]);
                                             const isToday = day === todayStr;
-                                            // Collect which flags were active on this day
                                             const activeFlags = flags.filter(f => f.history.includes(day));
                                             const hasActivity = activeFlags.length > 0;
-                                            // Check if any flag was fully completed on this day
                                             const completedFlags = flags.filter(f => {
                                                 const dayCount = f.history.filter(h => h === day).length;
                                                 return dayCount >= f.total;
@@ -443,7 +455,6 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                                             })}
                                                         </div>
                                                     )}
-                                                    {/* Tooltip on hover */}
                                                     {hasActivity && (
                                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
                                                             {activeFlags.map(f => f.name).join(', ')}
@@ -466,7 +477,7 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                                                 <div key={flag.id} className="flex items-center gap-2">
                                                     <div className={`w-2.5 h-2.5 rounded-full ${theme.bg}`} />
                                                     <span className="text-xs font-medium text-slate-500">{flag.name}</span>
-                                                    <span className="text-xs font-bold text-slate-400">{monthCount}次</span>
+                                                    <span className="text-xs font-bold text-slate-400">{monthCount} {flag.unit}</span>
                                                 </div>
                                             );
                                         })}
@@ -482,32 +493,32 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
             {isFlagModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setIsFlagModalOpen(false)}>
                     <div className="bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 w-full sm:max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-xl font-bold mb-6">新增 Flag</h2>
+                        <h2 className="text-xl font-bold mb-6">{t('modal.createTitle')}</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-sm font-medium text-slate-500 mb-1 block">目标名称</label>
+                                <label className="text-sm font-medium text-slate-500 mb-1 block">{t('modal.namePlaceholder')}</label>
                                 <input type="text" value={newFlag.name} onChange={e => setNewFlag({ ...newFlag, name: e.target.value })}
-                                    placeholder="例如：跑步" className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                                    placeholder={t('modal.namePlaceholder')} className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-sm font-medium text-slate-500 mb-1 block">目标次数</label>
+                                    <label className="text-sm font-medium text-slate-500 mb-1 block">{t('modal.targetCount')}</label>
                                     <input type="number" value={newFlag.total} onChange={e => setNewFlag({ ...newFlag, total: Number(e.target.value) })}
                                         min={1} className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium text-slate-500 mb-1 block">单位</label>
+                                    <label className="text-sm font-medium text-slate-500 mb-1 block">{t('modal.unitLabel')}</label>
                                     <input type="text" value={newFlag.unit} onChange={e => setNewFlag({ ...newFlag, unit: e.target.value })}
-                                        placeholder="次" className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                                        placeholder={t('modal.unitPlaceholder')} className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-500 mb-2 block">轮回模式</label>
+                                <label className="text-sm font-medium text-slate-500 mb-2 block">{t('modal.cycleLabel')}</label>
                                 <div className="flex gap-2">
-                                    {([['none', '不轮回'], ['weekly', '每周轮回'], ['monthly', '每月轮回']] as const).map(([val, label]) => (
+                                    {([['none', t('flags.cycle.none')], ['weekly', t('flags.cycle.weekly')], ['monthly', t('flags.cycle.monthly')]] as const).map(([val, label]) => (
                                         <button key={val}
                                             onClick={() => setNewFlag({ ...newFlag, cycle: val })}
-                                            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${newFlag.cycle === val
+                                            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${newFlag.cycle === val
                                                 ? 'bg-slate-900 text-white'
                                                 : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
                                                 }`}>
@@ -520,9 +531,9 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
                         </div>
                         <div className="flex gap-3 mt-8">
                             <button onClick={() => setIsFlagModalOpen(false)}
-                                className="flex-1 py-3 border border-slate-200 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-50 transition-all">取消</button>
+                                className="flex-1 py-3 border border-slate-200 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-50 transition-all cursor-pointer">{t('modal.cancel')}</button>
                             <button onClick={handleAddFlag}
-                                className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all">创建</button>
+                                className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all cursor-pointer">{t('modal.submitCreate')}</button>
                         </div>
                     </div>
                 </div>
@@ -530,7 +541,21 @@ export default function Dashboard({ user, onSignOut }: DashboardProps) {
 
             {/* Congrats overlay */}
             {congratsFlag && (
-                <CongratsOverlay flagName={congratsFlag} onDone={dismissCongrats} />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-[fadeIn_0.2s_ease-out]" onClick={dismissCongrats}>
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+                        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-500">
+                            <PartyPopper size={32} />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-800">{t('flags.completed')}</h3>
+                        <p className="text-slate-500 font-medium">🎉 {congratsFlag}</p>
+                        <button
+                            onClick={dismissCongrats}
+                            className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all cursor-pointer"
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
             )}
 
             {/* Toast notification */}

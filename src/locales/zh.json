@@ -1,0 +1,98 @@
+{
+  "app": {
+    "title": "EasyNote",
+    "subtitle": "极简打卡 & 备忘录",
+    "cloudSynced": "云端同步已开启",
+    "offline": "离线模式"
+  },
+  "flags": {
+    "title": "目标 Flag",
+    "subtitle": "点击卡片增加计数，拖拽可自由排序",
+    "empty": "还没有 Flag，点击下方“立个 Flag”开始吧！",
+    "createBtn": "立个 Flag",
+    "completed": "已达成！",
+    "resetBtn": "重置目标",
+    "makeupBtn": "补签昨天",
+    "makeUpSuccess": "已补签昨天 ✅",
+    "deleteConfirm": "确认要删除该 Flag 吗？",
+    "cycle": {
+      "none": "无循环",
+      "weekly": "每周重置",
+      "monthly": "每月重置"
+    }
+  },
+  "modal": {
+    "createTitle": "立一个新 Flag",
+    "editTitle": "编辑 Flag",
+    "namePlaceholder": "Flag 名称（如：阅读本数、健身打卡）",
+    "targetCount": "目标次数",
+    "unitLabel": "单位",
+    "unitPlaceholder": "次/天/本/小时",
+    "cycleLabel": "周期设置",
+    "cancel": "取消",
+    "submitCreate": "立即创建",
+    "submitSave": "保存修改"
+  },
+  "calendar": {
+    "title": "月度打卡回顾",
+    "prevMonth": "上个月",
+    "nextMonth": "下个月",
+    "weekdays": ["日", "一", "二", "三", "四", "五", "六"]
+  },
+  "memo": {
+    "title": "极简备忘",
+    "modeNote": "笔记",
+    "modeTodo": "待办",
+    "notePlaceholder": "随时记录想法...\n提示：包含数字的行（如“读 5 本书”）点击右侧按钮可快速转为 Flag",
+    "convertToFlag": "转为 Flag",
+    "todoPlaceholder": "输入待办事项，按回车添加...",
+    "todoEmpty": "暂无待办事项",
+    "clearAll": "清空已完成"
+  },
+  "login": {
+    "subtitle": "极简个人效率管理",
+    "githubLogin": "GitHub 登录",
+    "googleLogin": "Google 登录",
+    "loggingIn": "正在跳转...",
+    "syncNotice": "登录后数据将跨设备同步"
+  },
+  "userMenu": {
+    "signOut": "退出登录"
+  },
+  "updateLog": {
+    "title": "Update Log",
+    "dismissHint": "点击空白处关闭",
+    "systemUpdate": "System Update",
+    "log0": {
+      "item1_1": "1. 新增 ",
+      "item1_highlight": "多语言 (ZH/EN)",
+      "item1_2": " 自由切换支持",
+      "item2_1": "2. 智能匹配 ",
+      "item2_highlight": "系统首选语言",
+      "item2_2": " 与偏好记忆",
+      "item3": "3. 海外体验提升与全球化支持！~"
+    },
+    "log1": {
+      "item1_1": "1. 待办完成后自动沉底 — 优先级：",
+      "item1_highlight": "未完成置顶",
+      "item1_2": " → 未完成普通 → 已完成",
+      "item2_1": "2. 换上了全新的 ",
+      "item2_highlight": "LOGO",
+      "item3": "3. 使用愉快，欢迎更多反馈！~"
+    },
+    "log2": {
+      "item1_1": "1. 新增 ",
+      "item1_highlight": "Google",
+      "item1_2": " 账号一键无感登录支持",
+      "item2_1": "2. 优化 PWA ",
+      "item2_highlight": "静默更新",
+      "item2_2": " 体验，告别手动重载",
+      "item3": "3. 基础体验与稳定性提升"
+    }
+  },
+  "language": {
+    "zh": "简体中文",
+    "en": "English",
+    "select": "语言 / Language"
+  }
+}
