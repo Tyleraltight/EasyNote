@@ -4,6 +4,10 @@
 
 🌐 **在线体验**：[https://www.easynote.date/](https://www.easynote.date/)
 
+<div align="center">
+  <img src="src/assets/mockup1.png" alt="EasyNote Dashboard Screenshot" width="800"/>
+</div>
+
 [English](./README_EN.md) | 简体中文
 
 ---

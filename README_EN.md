@@ -4,6 +4,10 @@
 
 🌐 **Live Demo**: [https://www.easynote.date/](https://www.easynote.date/)
 
+<div align="center">
+  <img src="src/assets/mockup1.png" alt="EasyNote Dashboard Screenshot" width="800"/>
+</div>
+
 English | [简体中文](./README.md)
 
 ---
